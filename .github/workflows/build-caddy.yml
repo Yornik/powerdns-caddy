@@ -29,7 +29,7 @@ jobs:
       - name: Get latest commit from mholt/caddy-ratelimit
         id: ratelimit
         run: |
-          echo "sha=$(curl -s https://api.github.com/repos/mholt/caddy-ratelimit/commits/main | jq -r .sha)" >> $GITHUB_OUTPUT
+          echo "sha=$(curl -s https://api.github.com/repos/mholt/caddy-ratelimit/commits/master | jq -r .sha)" >> $GITHUB_OUTPUT
 
       - name: Define release tag
         id: tag
@@ -63,7 +63,7 @@ jobs:
           mkdir -p build
           GOOS=linux GOARCH=arm64 xcaddy build ${{ steps.caddy.outputs.version }} \
             --with github.com/caddy-dns/powerdns@${{ steps.powerdns.outputs.sha }} \
-            --with github.com/mholt/caddy-ratelimit \
+            --with github.com/mholt/caddy-ratelimit@${{ steps.ratelimit.outputs.sha }} \
             --output ./build/caddy-arm64
 
       - name: Upload ARM64 binary to GitHub Release
