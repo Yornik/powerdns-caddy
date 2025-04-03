@@ -49,16 +49,13 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Cancel if release already exists
-        if: steps.release_check.outputs.exists == 'true'
-        run: |
-          echo "Release already exists, skipping build."
-          exit 0
 
       - name: Install xcaddy
+        if: steps.release_check.outputs.exists == 'false'
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
       - name: Build Caddy for ARM64 with PowerDNS and Rate_Limit
+        if: steps.release_check.outputs.exists == 'false'
         run: |
           mkdir -p build
           GOOS=linux GOARCH=arm64 xcaddy build ${{ steps.caddy.outputs.version }} \
@@ -67,6 +64,7 @@ jobs:
             --output ./build/caddy-arm64
 
       - name: Upload ARM64 binary to GitHub Release
+        if: steps.release_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
