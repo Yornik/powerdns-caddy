@@ -58,7 +58,7 @@ jobs:
           mkdir -p build
           GOOS=linux GOARCH=arm64 xcaddy build ${{ steps.caddy.outputs.version }} \
             --with github.com/caddy-dns/powerdns@${{ steps.powerdns.outputs.sha }} \
-            --with --with github.com/mholt/caddy-ratelimit \
+            --with github.com/mholt/caddy-ratelimit \
             --output ./build/caddy-arm64
 
       - name: Upload ARM64 binary to GitHub Release
