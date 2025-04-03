@@ -30,7 +30,8 @@ jobs:
       - name: Define release tag
         id: tag
         run: |
-          TAG="${{ steps.caddy.outputs.version }}-pdns-${{ steps.powerdns.outputs.sha::7 }}-arm64"
+          SHORT_SHA=$(echo "${{ steps.powerdns.outputs.sha }}" | cut -c1-7)
+          TAG="${{ steps.caddy.outputs.version }}-pdns-${SHORT_SHA}-arm64"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Check if release already exists
