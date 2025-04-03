@@ -26,14 +26,19 @@ jobs:
         id: powerdns
         run: |
           echo "sha=$(curl -s https://api.github.com/repos/caddy-dns/powerdns/commits/main | jq -r .sha)" >> $GITHUB_OUTPUT
+      - name: Get latest commit from mholt/caddy-ratelimit
+        id: ratelimit
+        run: |
+          echo "sha=$(curl -s https://api.github.com/repos/mholt/caddy-ratelimit/commits/main | jq -r .sha)" >> $GITHUB_OUTPUT
 
       - name: Define release tag
         id: tag
         run: |
-          SHORT_SHA=$(echo "${{ steps.powerdns.outputs.sha }}" | cut -c1-7)
-          TAG="${{ steps.caddy.outputs.version }}-pdns-${SHORT_SHA}-arm64"
+          PDNS_SHORT=$(echo "${{ steps.powerdns.outputs.sha }}" | cut -c1-7)
+          RLIM_SHORT=$(echo "${{ steps.ratelimit.outputs.sha }}" | cut -c1-7)
+          TAG="${{ steps.caddy.outputs.version }}-pdns-${PDNS_SHORT}-rlim-${RLIM_SHORT}-arm64"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-
+    
       - name: Check if release already exists
         id: release_check
         run: |
@@ -53,7 +58,7 @@ jobs:
       - name: Install xcaddy
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
-      - name: Build Caddy for ARM64 with PowerDNS
+      - name: Build Caddy for ARM64 with PowerDNS and Rate_Limit
         run: |
           mkdir -p build
           GOOS=linux GOARCH=arm64 xcaddy build ${{ steps.caddy.outputs.version }} \
