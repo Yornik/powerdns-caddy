@@ -1,4 +1,4 @@
-name: Build Custom Caddy for ARM with PowerDNS
+name: Build Custom Caddy for ARM with Redis
 
 on:
   schedule:
@@ -15,17 +15,18 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.24'
 
       - name: Get latest Caddy version
         id: caddy
         run: |
           echo "version=$(curl -s https://api.github.com/repos/caddyserver/caddy/releases/latest | jq -r .tag_name)" >> $GITHUB_OUTPUT
 
-      - name: Get latest PowerDNS commit hash
-        id: powerdns
+      - name: Get latest redis-storage commit hash
+        id: redis
         run: |
-          echo "sha=$(curl -s https://api.github.com/repos/caddy-dns/powerdns/commits/main | jq -r .sha)" >> $GITHUB_OUTPUT
+          echo "sha=$(curl -s https://api.github.com/repos/pberkel/caddy-storage-redis/commits/main | jq -r .sha)" >> $GITHUB_OUTPUT
+
       - name: Get latest commit from mholt/caddy-ratelimit
         id: ratelimit
         run: |
@@ -34,11 +35,11 @@ jobs:
       - name: Define release tag
         id: tag
         run: |
-          PDNS_SHORT=$(echo "${{ steps.powerdns.outputs.sha }}" | cut -c1-7)
+          REDIS_SHORT=$(echo "${{ steps.redis.outputs.sha }}" | cut -c1-7)
           RLIM_SHORT=$(echo "${{ steps.ratelimit.outputs.sha }}" | cut -c1-7)
-          TAG="${{ steps.caddy.outputs.version }}-pdns-${PDNS_SHORT}-rlim-${RLIM_SHORT}-arm64"
+          TAG="${{ steps.caddy.outputs.version }}-redis-${REDIS_SHORT}-rlim-${RLIM_SHORT}-arm64"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-    
+
       - name: Check if release already exists
         id: release_check
         run: |
@@ -49,17 +50,16 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-
       - name: Install xcaddy
         if: steps.release_check.outputs.exists == 'false'
         run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 
-      - name: Build Caddy for ARM64 with PowerDNS and Rate_Limit
+      - name: Build Caddy for ARM64 with Redis Storage and Rate Limiter
         if: steps.release_check.outputs.exists == 'false'
         run: |
           mkdir -p build
           GOOS=linux GOARCH=arm64 xcaddy build ${{ steps.caddy.outputs.version }} \
-            --with github.com/caddy-dns/powerdns@${{ steps.powerdns.outputs.sha }} \
+            --with github.com/pberkel/caddy-storage-redis@${{ steps.redis.outputs.sha }} \
             --with github.com/mholt/caddy-ratelimit@${{ steps.ratelimit.outputs.sha }} \
             --output ./build/caddy-arm64
 
@@ -68,7 +68,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Caddy ${{ steps.caddy.outputs.version }} with PowerDNS and rate-limit modules (ARM64)"
+          name: "Caddy ${{ steps.caddy.outputs.version }} with Redis Storage and Rate Limit modules (ARM64)"
           files: ./build/caddy-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
